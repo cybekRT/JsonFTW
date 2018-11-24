@@ -1,27 +1,8 @@
-#include "Document.hpp"
-#include <fstream>
-#include <map>
-
-#if _WIN32 && _DEBUG
-#include <Windows.h>
-#endif
-
-int strnicmp(const char* str1, const char* str2, unsigned maxLength)
-{
-	for(unsigned a = 0; a < maxLength; ++a)
-	{
-		char c1 = tolower(*str1);
-		char c2 = tolower(*str2);
-
-		int v = c1 - c2;
-		if(v != 0)
-			return v;
-		else if(c1 == 0)
-			return 0;
-	}
-
-	return 0;
-}
+#include"Document.hpp"
+#include<fstream>
+#include<cstring>
+#include<strings.h>
+#include<map>
 
 namespace JsonFTW
 {
@@ -62,7 +43,7 @@ namespace JsonFTW
 			{
 				unsigned dataSize = defaultValues.length() + 1;
 				data = new char[dataSize];
-				strncpy(data, defaultValues.c_str(), dataSize);
+				memcpy(data, defaultValues.c_str(), dataSize);
 			}
 			else
 				throw FileNotFoundException(path);
@@ -82,9 +63,9 @@ namespace JsonFTW
 
 		//Trim(data);
 
-		std::ofstream of("test_of.json", std::ios::binary);
+		/*std::ofstream of("test_of.json", std::ios::binary);
 		of.write(data, strlen(data));
-		of.close();
+		of.close();*/
 
 		//if (!Parse(data, 0, *this))
 		//	return false;
@@ -244,7 +225,7 @@ namespace JsonFTW
 			return false;
 		};
 
-		/*auto EndOfDouble = [text](unsigned startIndex, unsigned &endIndex) -> bool
+		auto EndOfDouble = [text](unsigned startIndex, unsigned &endIndex) -> bool
 		{
 			if (text[startIndex] > '9' && text[startIndex] < '0' && text[startIndex] != '.')
 				return false;
@@ -261,7 +242,7 @@ namespace JsonFTW
 			}
 
 			return startIndex != endIndex;
-		};*/
+		};
 
 		auto NextChar = [text, currentLine](unsigned &index)
 		{
@@ -315,8 +296,9 @@ namespace JsonFTW
 
 				bool hasKey = true;
 				unsigned keyStartIndex = a;
-				char *key = new char[endIndex - a + 1];
-				strncpy(key, text + a + 1, endIndex - a);
+				char *key = new char[endIndex - a];
+				memcpy(key, text + a + 1, endIndex - a - 1);
+				key[endIndex - a - 1] = 0;
 				ParseString(key, endIndex - a);
 				a = endIndex + 1;
 				NextChar(a);
@@ -339,23 +321,25 @@ namespace JsonFTW
 						throw ParsingException("Identifier not terminated at line " + std::to_string(*currentLine));
 
 					char *valueStr = new char[endIndex - a + 1];
-					strncpy(valueStr, text + a + 1, endIndex - a);
+					memcpy(valueStr, text + a + 1, endIndex - a - 1);
+					valueStr[endIndex - a] = 0;
+					printf("String (%u) - %s\n", endIndex - a + 1, valueStr);
 					ParseString(valueStr, endIndex - a);
 					a = endIndex + 1;
 
 					value = new ValueString(key, valueStr);
 				}
-				else if (strnicmp("null", text + a, 4) == 0)
+				else if (strcasecmp("null", text + a/*, 4*/) == 0)
 				{
 					value = new ValueNull(key);
 					a += 4;
 				}
-				else if (strnicmp("true", text + a, 4) == 0)
+				else if (strcasecmp("true", text + a/*, 4*/) == 0)
 				{
 					value = new ValueBool(key, true);
 					a += 4;
 				}
-				else if (strnicmp("false", text + a, 5) == 0)
+				else if (strcasecmp("false", text + a/*, 5*/) == 0)
 				{
 					value = new ValueBool(key, false);
 					a += 5;
@@ -406,5 +390,7 @@ namespace JsonFTW
 				offset++;
 			}
 		}
+
+		text[length - offset - 1] = 0;
 	}
 }

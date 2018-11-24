@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Value.hpp"
-#include <string>
+#include"Value.hpp"
+#include<string>
 
 namespace JsonFTW
 {
@@ -27,6 +27,11 @@ namespace JsonFTW
 		Value &operator[](const std::string &key)
 		{
 			return ValueArray::operator[](key);
+		}
+
+		bool Has(const std::string &key)
+		{
+			return ValueArray::Has(key);
 		}
 
 	protected:

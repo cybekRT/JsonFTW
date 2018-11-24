@@ -1,9 +1,8 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
-#include "Exception.hpp"
+#include"Exception.hpp"
+#include<string>
+#include<vector>
 
 namespace JsonFTW
 {
@@ -14,21 +13,19 @@ namespace JsonFTW
 	{
 	//protected:
 	public:
+		std::string name;
+		Value *parent;
+
 		enum class Type
 		{
 			Null, Bool, Double, String, Array
 		};
-
 		Type type;
-		std::string name;
-		Value *parent;
 
 	public:
 		Value(Type type, std::string name) : type(type), name(name), parent(nullptr)
 		{
 		}
-
-		virtual ~Value() {}
 
 		std::string GetAbsoluteName()
 		{
@@ -68,13 +65,22 @@ namespace JsonFTW
 			throw InvalidTypeException(GetAbsoluteName() + " is not ValueString");
 		}
 
-		virtual Value &operator[](__attribute__((unused)) unsigned index)
+		virtual std::vector<Value*>::iterator begin()
 		{
-			(void)index;
 			throw InvalidTypeException(GetAbsoluteName() + " is not ValueArray");
 		}
 
-		virtual Value &operator[](__attribute__((unused)) std::string key)
+		virtual std::vector<Value*>::iterator end()
+		{
+			throw InvalidTypeException(GetAbsoluteName() + " is not ValueArray");
+		}
+
+		virtual Value &operator[](unsigned index)
+		{
+			throw InvalidTypeException(GetAbsoluteName() + " is not ValueArray");
+		}
+
+		virtual Value &operator[](std::string key)
 		{
 			throw InvalidTypeException(GetAbsoluteName() + " is not ValueArray");
 		}
@@ -235,6 +241,30 @@ namespace JsonFTW
 			}
 
 			throw KeyNotFoundException("Array = " + GetAbsoluteName() + ", Key = " + key);
+		}
+
+		virtual std::vector<Value*>::iterator begin()
+		{
+			return childNodes.begin();
+		}
+
+		virtual std::vector<Value*>::iterator end()
+		{
+			return childNodes.end();
+		}
+
+		bool Has(const std::string &key)
+		{
+			if (unnamedChildren)
+				throw KeyNotFoundException("Array = " + GetAbsoluteName() + ", array has unnamed children");
+
+			for (auto v : childNodes)
+			{
+				if (v->name == key)
+					return true;
+			}
+
+			return false;
 		}
 
 		void PrintElements(std::string prefix = "")

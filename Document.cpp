@@ -322,12 +322,13 @@ namespace JsonFTW
 
 					char *valueStr = new char[endIndex - a + 1];
 					memcpy(valueStr, text + a + 1, endIndex - a - 1);
-					valueStr[endIndex - a] = 0;
+					valueStr[endIndex - a - 1] = 0;
 					printf("String (%u) - %s\n", endIndex - a + 1, valueStr);
 					ParseString(valueStr, endIndex - a);
 					a = endIndex + 1;
 
 					value = new ValueString(key, valueStr);
+					delete[] valueStr;
 				}
 				else if (strcasecmp("null", text + a/*, 4*/) == 0)
 				{

@@ -27,6 +27,11 @@ namespace JsonFTW
 		{
 		}
 
+		~Value()
+		{
+
+		}
+
 		std::string GetAbsoluteName()
 		{
 			std::string name = this->name;

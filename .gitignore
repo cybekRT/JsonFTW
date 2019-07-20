@@ -1,2 +1,12 @@
+.DS_Store
 *.o
+*.d
+*.obj
+*.err
+*.exe
+*.dll
 lib*.a
+
+/.settings
+/Debug
+/Release

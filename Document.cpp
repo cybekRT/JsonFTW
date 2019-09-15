@@ -227,8 +227,10 @@ namespace JsonFTW
 
 		auto EndOfDouble = [text](unsigned startIndex, unsigned &endIndex) -> bool
 		{
-			if (text[startIndex] > '9' && text[startIndex] < '0' && text[startIndex] != '.')
+			if ((text[startIndex] > '9' || text[startIndex] < '0') && text[startIndex] != '.')
+			{
 				return false;
+			}
 
 			for (unsigned a = startIndex;; ++a)
 			{
@@ -238,10 +240,12 @@ namespace JsonFTW
 					break;
 				}
 				else if (text[a + 1] == 0)
+				{
 					return false;
+				}
 			}
 
-			return startIndex != endIndex;
+			return true;
 		};
 
 		auto NextChar = [text, currentLine](unsigned &index)
@@ -277,7 +281,7 @@ namespace JsonFTW
 				throw ParsingException("Unexpected end of file");
 
 			Value *value;
-			if (text[a] == '{') // Unnamed array
+			if (text[a] == '{' || text[a] == '[') // Unnamed array
 			{
 				value = new ValueArray("");
 				a = Parse(text, a, *(ValueArray*)value, currentLine);
@@ -288,33 +292,51 @@ namespace JsonFTW
 			{
 				// Key
 				NextChar(a);
-				if (text[a] != '"')
-					throw ParsingException("Identifier expected at line " + std::to_string(*currentLine));
-				unsigned endIndex;
-				if (!EndOfString(a, endIndex))
-					throw ParsingException("Identifier not terminated at line " + std::to_string(*currentLine));
 
-				bool hasKey = true;
-				unsigned keyStartIndex = a;
-				char *key = new char[endIndex - a];
-				memcpy(key, text + a + 1, endIndex - a - 1);
-				key[endIndex - a - 1] = 0;
-				ParseString(key, endIndex - a);
-				a = endIndex + 1;
-				NextChar(a);
-				if (text[a] == ',' || text[a] == ']') // Arrays with values, no keys
+				char *key;
+				bool hasKey;
+				unsigned endIndex;
+				if (text[a] == '"')
+				{
+					hasKey = true;
+					if (!EndOfString(a, endIndex))
+						throw ParsingException("Identifier not terminated at line " + std::to_string(*currentLine));
+				}
+				else
 				{
 					hasKey = false;
-					key[0] = 0;
-					a = keyStartIndex;
+					if (!EndOfDouble(a, endIndex))
+						throw ParsingException("Identifier not terminated at line " + std::to_string(*currentLine));
 				}
-				else if (text[a] != ':')
-					throw ParsingException("Colon expected at line " + std::to_string(*currentLine));
+
+				if(hasKey)
+				{
+					key = new char[endIndex - a];
+					memcpy(key, text + a + 1, endIndex - a - 1);
+					key[endIndex - a - 1] = 0;
+					ParseString(key, endIndex - a);
+					a = endIndex + 1;
+					NextChar(a);
+				}
 				else
-					a++;
+				{
+					key = new char[1];
+					key[0] = 0;
+				}
+
+				if (hasKey)
+				{
+					if (text[a] != ':')
+						throw ParsingException("Colon expected at line " + std::to_string(*currentLine));
+					else
+						a++;
+				}
 
 				// Value
 				NextChar(a);
+
+				//printf("Testing: \"%.*s\"\n", 10, text + a);
+
 				if (text[a] == '"')
 				{
 					if (!EndOfString(a, endIndex))
@@ -323,25 +345,25 @@ namespace JsonFTW
 					char *valueStr = new char[endIndex - a + 1];
 					memcpy(valueStr, text + a + 1, endIndex - a - 1);
 					valueStr[endIndex - a - 1] = 0;
-					printf("String (%u) - %s\n", endIndex - a + 1, valueStr);
 					ParseString(valueStr, endIndex - a);
 					a = endIndex + 1;
 
 					value = new ValueString(key, valueStr);
 					delete[] valueStr;
 				}
-				else if (strcasecmp("null", text + a/*, 4*/) == 0)
+				else if (strncasecmp("null", text + a, 4) == 0)
 				{
 					value = new ValueNull(key);
 					a += 4;
 				}
-				else if (strcasecmp("true", text + a/*, 4*/) == 0)
+				else if (strncasecmp("true", text + a, 4) == 0)
 				{
 					value = new ValueBool(key, true);
 					a += 4;
 				}
-				else if (strcasecmp("false", text + a/*, 5*/) == 0)
+				else if (strncasecmp("false", text + a, 5) == 0)
 				{
+					//printf("Found: \"false\"\n");
 					value = new ValueBool(key, false);
 					a += 5;
 				}
@@ -349,17 +371,14 @@ namespace JsonFTW
 				{
 					value = new ValueArray(key, text[a] == '[');
 					a = Parse(text, a, *(ValueArray*)value, currentLine);
-					//if (a == 0)
-					//	return 0;
 				}
 				else // double
 				{
-					//EndOfDouble(a, endIndex);
 					char *endPtr = nullptr;
 					value = new ValueDouble(key, std::strtod(text + a, &endPtr));
-					//a = endIndex + 1;
 					a = endPtr - text;
 				}
+				// throw ParsingException("Identifier expected at line " + std::to_string(*currentLine));
 			}
 
 			value->parent = &array;
@@ -371,7 +390,7 @@ namespace JsonFTW
 			else if (text[a] == '}' || text[a] == ']')
 				break;
 			else
-				throw ParsingException("Closing bracket expected at line " + std::to_string(*currentLine));
+				throw ParsingException((std::string)"Found: \"" + text[a] + "\", closing bracket expected at line " + std::to_string(*currentLine));
 		}
 
 		return a + 1;

@@ -135,6 +135,9 @@ namespace JsonFTW
 					else
 						f << "false";
 					break;
+				case Value::Type::Integer:
+					f << v->GetInt();
+					break;
 				case Value::Type::Double:
 					f << v->GetDouble();
 					break;
@@ -375,8 +378,15 @@ namespace JsonFTW
 				else // double
 				{
 					char *endPtr = nullptr;
-					value = new ValueDouble(key, std::strtod(text + a, &endPtr));
+
+					double valueD = std::strtod(text + a, &endPtr);
 					a = endPtr - text;
+
+					const char* dotFound = strchr(text + a, '.');
+					if(!dotFound || dotFound >= endPtr)
+						value = new ValueInt(key, valueD);
+					else
+						value = new ValueDouble(key, valueD);
 				}
 				// throw ParsingException("Identifier expected at line " + std::to_string(*currentLine));
 			}

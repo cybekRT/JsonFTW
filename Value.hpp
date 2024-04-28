@@ -18,7 +18,7 @@ namespace JsonFTW
 
 		enum class Type
 		{
-			Null, Bool, Double, String, Array
+			Null, Bool, Integer, Double, String, Array
 		};
 		Type type;
 
@@ -58,6 +58,11 @@ namespace JsonFTW
 		virtual bool GetBool()
 		{
 			throw InvalidTypeException(GetAbsoluteName() + " is not ValueBool");
+		}
+
+		virtual int32_t GetInt()
+		{
+			throw InvalidTypeException(GetAbsoluteName() + " is not ValueInt");
 		}
 
 		virtual double GetDouble()
@@ -140,6 +145,42 @@ namespace JsonFTW
 		bool GetBool()
 		{
 			return value;
+		}
+	};
+
+	/*
+		Integer
+	*/
+	class ValueInt : public Value
+	{
+	protected:
+		int32_t value;
+
+	public:
+		ValueInt(std::string name, int32_t value) : Value(Type::Integer, name), value(value)
+		{
+
+		}
+
+		operator int32_t()
+		{
+			return value;
+		}
+
+		ValueInt& operator=(int32_t value)
+		{
+			this->value = value;
+			return *this;
+		}
+
+		int32_t GetInt()
+		{
+			return value;
+		}
+
+		double GetDouble()
+		{
+			return (double)value;
 		}
 	};
 
